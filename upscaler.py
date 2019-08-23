@@ -7,11 +7,10 @@ import sys
 def lerp(f1, f2, t):
     return (1 - t) * f1 + t * f2
 
-# Only interpolate on H (hue) and S (saturation) channels
-def lerp_hls(f1, f2, t):
+def hls_lerp(f1, f2, t):
     h = lerp(f1[:, :, 0], f2[:, :, 0], t).reshape(f1.shape[0], f1.shape[1], 1)
+    l = f1[:, :, 1].reshape(f1.shape[0], f1.shape[1], 1) # Assume light stays the same across the two frames (or that the difference is negligible)
     s = lerp(f1[:, :, 2], f2[:, :, 2], t).reshape(f1.shape[0], f1.shape[1], 1)
-    l = f1[:, :, 1].reshape(f1.shape[0], f1.shape[1], 1)
     return np.concatenate((h, l, s), axis = 2)
 
 parser = argparse.ArgumentParser()
@@ -56,9 +55,9 @@ while True:
 
     if ret:
         if first_frame:
-            prev = frame
             first_frame = False
             out.write(frame)
+            cv2.imwrite(str(i) + ".jpg", first_frame)
             cv2.imshow("Frame:", frame)
             i += 1
 
@@ -69,8 +68,11 @@ while True:
                 cv2.imshow("Frame", new_frame)
                 i += 1
 
+
             if np.array_equal(frame, prev):
                 raise Exception("frames are equal")
+
+        prev = frame
 
         if i % 100 == 99:
             sys.stdout.write("-")

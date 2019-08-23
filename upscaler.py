@@ -39,7 +39,7 @@ if k < 1:
 
 fps = in_file_fps * k
 
-out = cv2.VideoWriter(out_file, cv2.VideoWriter_fourcc(*"XVID"), fps, (width, height))
+out = cv2.VideoWriter(out_file, cv2.VideoWriter_fourcc(*"mp4v"), fps, (width, height))
 
 t_vals = np.linspace(0, 1, k + 1)[1:]
 
@@ -64,10 +64,9 @@ while True:
 
         else:
             for t in t_vals:
-                new_frame = np.uint8(lerp_hls(cv2.cvtColor(prev, cv2.COLOR_RGB2HLS), cv2.cvtColor(frame, cv2.COLOR_RGB2HLS), t))
-                if t != 1:
-                    out.write(cv2.cvtColor(new_frame, cv2.COLOR_HLS2RGB))
-                    cv2.imshow("Frame:", cv2.cvtColor(new_frame, cv2.COLOR_HLS2RGB))
+                new_frame = np.uint8(lerp(prev, frame, t))
+                out.write(new_frame)
+                cv2.imshow("Frame", new_frame)
                 i += 1
 
             if np.array_equal(frame, prev):

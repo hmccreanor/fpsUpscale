@@ -7,19 +7,18 @@ import sys
 def lerp(f1, f2, t):
     return (1 - t) * f1 + t * f2
 
-def hls_lerp(f1, f2, t):
-    h = lerp(f1[:, :, 0], f2[:, :, 0], t).reshape(f1.shape[0], f1.shape[1], 1)
-    l = f1[:, :, 1].reshape(f1.shape[0], f1.shape[1], 1) # Assume light stays the same across the two frames (or that the difference is negligible)
-    s = lerp(f1[:, :, 2], f2[:, :, 2], t).reshape(f1.shape[0], f1.shape[1], 1)
-    return np.concatenate((h, l, s), axis = 2)
+def cubic_interp(f1, f2, t):
+    return f1 + 3 * (f2 - f1) * (t ** 2) + 2 * (f1 - f2) * (t ** 3)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("inFile", type = str, help = "File path of the video you want to upscale")
 parser.add_argument("outFile", type = str, help = "File path of the upscaled video")
 parser.add_argument("k", type = int, help = "How much you are scaling the framerate by (must be integer)")
+parser.add_argument("method", type = str, help = "Interpolation method to use (either \"cubic\" or \"linear\")")
 
 args = parser.parse_args()
-in_file, out_file, k = args.inFile, args.outFile, args.k
+in_file, out_file, k, method = args.inFile, args.outFile, args.k, args.method
+
 
 cap = cv2.VideoCapture(in_file)
 
@@ -57,13 +56,24 @@ while True:
         if first_frame:
             first_frame = False
             out.write(frame)
-            cv2.imwrite(str(i) + ".jpg", first_frame)
             cv2.imshow("Frame:", frame)
             i += 1
 
         else:
             for t in t_vals:
-                new_frame = np.uint8(lerp(prev, frame, t))
+
+                if method == "cubic":
+                    new_frame = np.uint8(cubic_interp(prev, frame, t))
+                    print(new_frame.min(), ",", new_frame.max()) 
+                elif method == "linear":
+                    new_frame = np.uint8(lerp(prev, frame, t))
+                    print(new_frame.min(), ",", new_frame.max())
+
+                if t != 1:
+                    cv2.imwrite(str(i) + "interp" + ".jpg", new_frame)
+                else:
+                    cv2.imwrite(str(i) + ".jpg", new_frame)
+
                 out.write(new_frame)
                 cv2.imshow("Frame", new_frame)
                 i += 1
